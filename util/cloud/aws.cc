@@ -379,7 +379,7 @@ void AwsSignKey::Sign(string_view payload_sig, HttpHeader* header) const {
 
   // We show consider to pass it via argument to make the function test-friendly.
   // Must be recent (upto 900sec skew is allowed vs amazon servers).
-  absl::Time tn = absl::Now();
+  absl::Time tn = absl::FromTimeT(0);
 
   string amz_date = absl::FormatTime("%Y%m%dT%H%M00Z", tn, utc_tz);
   header->set("x-amz-date", amz_date);
@@ -429,12 +429,12 @@ void AwsSignKey::RefreshIfNeeded() const {
   absl::CivilDay date_before(utc_tz.At(absl::FromTimeT(now_)).cs);
 
   // Must be recent (upto 900sec skew is allowed vs amazon servers).
-  time_t now = time(NULL);
+  time_t now = 0;
   absl::Time tn = absl::FromTimeT(now);
   absl::CivilDay date_now(utc_tz.At(tn).cs);
 
-  if (date_now == date_before)
-    return;
+  // if (date_now == date_before)
+  //   return;
 
   now_ = now;
   string amz_date = absl::FormatTime("%Y%m%d", tn, utc_tz);

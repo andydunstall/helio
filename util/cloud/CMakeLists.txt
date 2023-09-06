@@ -7,3 +7,5 @@ if(TARGET LibXml2::LibXml2)
 else()
   Message(WARNING "LibXml2 not found, if you need aws_lib, install LibXml2 with 'sudo apt install libxml2-dev'")
 endif()
+
+add_subdirectory(aws)
