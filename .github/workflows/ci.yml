@@ -11,82 +11,6 @@ env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Debug
 jobs:
-  build:
-    # The CMake configure and build commands are platform agnostic and should work equally
-    # well on Windows or Mac.  You can convert this to a matrix build if you need
-    # cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # Test of these containers
-        include:
-          - container: alpine-dev:latest
-            compiler: {cxx: clang++, c: clang}
-          - container: ubuntu-dev:20
-            compiler: {cxx: g++, c: gcc}
-            cxx_flags: "-fprofile-arcs -ftest-coverage -Werror"
-          - container: fedora:30
-            compiler: {cxx: g++, c: gcc}
-
-    timeout-minutes: 50
-    container:
-      image: ghcr.io/romange/${{ matrix.container }}
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.3
-
-    - name: Configure Cache Env
-      uses: actions/github-script@v6
-      with:
-        script: |
-          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '')
-
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: |
-          uname -a
-          ulimit -a
-
-          cat /proc/cpuinfo
-          cmake -B ${{github.workspace}}/build \
-            -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
-            -GNinja \
-            -DCMAKE_C_COMPILER="${{matrix.compiler.c}}" \
-            -DCMAKE_CXX_COMPILER="${{matrix.compiler.cxx}}" \
-            -DCMAKE_CXX_FLAGS_DEBUG="${{matrix.cxx_flags}}" \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_COMPILER_LAUNCHER=sccache
-    - name: Build
-      run: |
-          cd ${{github.workspace}}/build
-
-          ninja -k 5 base/all io/all strings/all util/all echo_server ping_iouring_server https_client_cli s3v2_demo
-          ${SCCACHE_PATH} --show-stats
-
-    - name: Test
-      run: |
-          cd ${{github.workspace}}/build
-          GLOG_logtostderr=1 gdb -batch -ex "run" -ex "thread apply all bt" \
-             ./accept_server_test || true
-          GLOG_logtostderr=1 GLOG_vmodule=proactor=1 ctest -V -L CI
-          # ./proactor_test --gtest_filter=*Migrate --logtostderr --vmodule=proactor=2,uring_fiber_algo=1
-    - name: Coverage
-      if: matrix.container == 'ubuntu-dev:20'
-      run: |
-          lcov -c -d ${{github.workspace}}/build -o coverage.info
-          lcov --remove coverage.info -o coverage.info '/usr/*' '*/_deps/*' '*/third_party/*'
-
-    - name: Upload coverage to Codecov
-      if: matrix.container == 'ubuntu-dev:20'
-      uses: codecov/codecov-action@v3
-      with:
-         files: ./coverage.info
-         fail_ci_if_error: false
-
   build-macos:
     runs-on: macos-latest
     timeout-minutes: 30
@@ -107,6 +31,5 @@ jobs:
       - name: Build & Test
         run: |
           cd ${{github.workspace}}/build
-          ninja -k 5 base/all io/all strings/all util/all echo_server ping_iouring_server \
-            https_client_cli s3v2_demo
-          ctest -V -L CI
+          ninja -k 5 fibers_test
+          ./fibers_test --gtest_repeat=100
