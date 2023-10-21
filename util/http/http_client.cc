@@ -46,6 +46,7 @@ Client::Client(ProactorBase* proactor) : proactor_(proactor) {
 }
 
 Client::~Client() {
+  Close();
 }
 
 std::error_code Client::Connect(string_view host, string_view service) {
@@ -63,7 +64,7 @@ std::error_code Client::Reconnect() {
 
   if (socket_) {
     error_code ec = socket_->Close();
-    LOG_IF(WARNING, !ec) << "Socket close failed: " << ec.message();
+    LOG_IF(WARNING, ec) << "Socket close failed: " << ec.message();
     socket_.reset();
   }
 
@@ -116,10 +117,10 @@ auto Client::Send(Verb verb, string_view url, string_view body, Response* respon
 }
 #endif
 
-void Client::Shutdown() {
+void Client::Close() {
   if (socket_) {
-    std::error_code ec = socket_->Shutdown(SHUT_RDWR);
-    LOG_IF(WARNING, !ec) << "Socket Shutdown failed: " << ec.message();
+    std::error_code ec = socket_->Close();
+    LOG_IF(WARNING, ec) << "Socket close failed: " << ec.message();
     socket_.reset();
   }
 }
