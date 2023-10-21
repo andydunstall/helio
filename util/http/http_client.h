@@ -59,7 +59,7 @@ class Client {
   template <typename Resp> BoostError Recv(Resp* resp);
   BoostError ReadHeader(::boost::beast::http::basic_parser<false>* parser);
 
-  void Shutdown();
+  void Close();
 
   bool IsConnected() const;
 
