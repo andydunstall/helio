@@ -4,24 +4,23 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
 #include "util/awsv2/aws.h"
-#include "util/awsv2/client.h"
+#include "util/http/http_clientv2.h"
 
 namespace util {
 namespace awsv2 {
-namespace s3 {
 
-class Client : public awsv2::Client {
+// Client is a wrapper for the HTTP client that handles AWS authentication and
+// request retries.
+class Client {
  public:
   Client(const std::string& endpoint, bool https, bool ec2_metadata, bool sign_payload);
 
-  AwsResult<std::vector<std::string>> ListBuckets();
+  virtual ~Client() = default;
 
-  AwsResult<std::vector<std::string>> ListObjects(std::string_view bucket, std::string_view prefix);
+  AwsResult<http::Response> Send(const http::Request& req);
 };
 
-}  // namespace s3
 }  // namespace awsv2
 }  // namespace util

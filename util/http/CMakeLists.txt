@@ -10,9 +10,9 @@ cxx_link(http_server_lib absl::strings absl::time base http_beast_prebuilt http_
 
 add_executable(http_main http_main.cc)
 
-add_library(http_client_lib http_client.cc)
+add_library(http_client_lib http_client.cc http_clientv2.cc)
 
-cxx_link(http_client_lib fibers2 http_beast_prebuilt http_utils tls_lib)
+cxx_link(http_client_lib fibers2 http_beast_prebuilt http_utils tls_lib boost_url)
 cxx_link(http_main fibers2 html_lib http_server_lib TRDP::mimalloc)
 
 

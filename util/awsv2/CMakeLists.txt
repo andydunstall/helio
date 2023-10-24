@@ -1,4 +1,4 @@
-add_library(aws_lib aws.cc credentials_provider.cc)
+add_library(aws_lib aws.cc client.cc credentials_provider.cc)
 
 cxx_link(aws_lib io)
 
