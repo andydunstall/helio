@@ -14,16 +14,11 @@ namespace s3 {
 
 class Client {
  public:
-  Client(const std::string& endpoint, bool https, bool ec2_metadata, bool sign_payload){};
+  Client(const std::string& endpoint, bool https, bool ec2_metadata, bool sign_payload);
 
-  AwsResult<std::vector<std::string>> ListBuckets() {
-    return std::vector<std::string>{};
-  }
+  AwsResult<std::vector<std::string>> ListBuckets();
 
-  AwsResult<std::vector<std::string>> ListObjects(std::string_view bucket,
-                                                  std::string_view prefix) {
-    return std::vector<std::string>{};
-  }
+  AwsResult<std::vector<std::string>> ListObjects(std::string_view bucket, std::string_view prefix);
 };
 
 }  // namespace s3
