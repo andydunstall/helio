@@ -5,6 +5,8 @@
 
 #include <cstdlib>
 
+#include "base/logging.h"
+
 namespace util {
 namespace awsv2 {
 
@@ -25,15 +27,20 @@ std::optional<Credentials> EnvironmentCredentialsProvider::GetCredentials() {
 
   creds.access_key_id = GetEnv("AWS_ACCESS_KEY_ID");
   if (creds.access_key_id.empty()) {
+    VLOG(1) << "aws: environment credentials provider: missing access key id";
     return std::nullopt;
   }
 
   creds.secret_access_key = GetEnv("AWS_SECRET_ACCESS_KEY");
   if (creds.secret_access_key.empty()) {
+    VLOG(1) << "aws: environment credentials provider: secret access key";
     return std::nullopt;
   }
 
   creds.session_token = GetEnv("AWS_SESSION_TOKEN");
+
+  LOG(INFO) << "aws: environment credentials provider: loaded credentials";
+
   return creds;
 }
 

@@ -28,9 +28,9 @@ struct Response {
 };
 
 enum class HttpError {
-  RESOLVE_ERR,
-  CONNECT_ERR,
-  NETWORK_ERR,
+  RESOLVE,
+  CONNECT,
+  NETWORK,
 };
 
 template <typename T> using HttpResult = io::Result<T, HttpError>;

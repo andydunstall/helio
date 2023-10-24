@@ -6,6 +6,7 @@
 #include <string>
 
 #include "util/awsv2/aws.h"
+#include "util/awsv2/credentials_provider.h"
 #include "util/http/http_clientv2.h"
 
 namespace util {
@@ -20,6 +21,11 @@ class Client {
   virtual ~Client() = default;
 
   AwsResult<http::Response> Send(const http::Request& req);
+
+ private:
+  http::ClientV2 client_;
+
+  std::unique_ptr<CredentialsProvider> credentials_provider_;
 };
 
 }  // namespace awsv2

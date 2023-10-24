@@ -1,6 +1,6 @@
 add_library(aws_lib aws.cc client.cc credentials_provider.cc)
 
-cxx_link(aws_lib io)
+cxx_link(aws_lib io http_client_lib)
 
 add_subdirectory(s3)
 

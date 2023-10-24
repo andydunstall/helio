@@ -8,7 +8,9 @@
 namespace util {
 namespace awsv2 {
 
-struct AwsError {};
+enum class AwsError {
+  UNAUTHORIZED,
+};
 
 template <typename T> using AwsResult = io::Result<T, AwsError>;
 
