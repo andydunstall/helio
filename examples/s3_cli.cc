@@ -16,10 +16,11 @@ ABSL_FLAG(std::string, endpoint, "", "S3 endpoint");
 ABSL_FLAG(size_t, upload_size, 100 << 20, "Upload file size");
 ABSL_FLAG(size_t, chunk_size, 1024, "File chunk size");
 ABSL_FLAG(bool, epoll, false, "Whether to use epoll instead of io_uring");
+ABSL_FLAG(bool, https, true, "Whether to use HTTPS");
 ABSL_FLAG(bool, ec2_metadata, false, "Whether to use EC2 metadata");
 
 void ListBuckets() {
-  util::awsv2::s3::Client client{absl::GetFlag(FLAGS_endpoint), false,
+  util::awsv2::s3::Client client{absl::GetFlag(FLAGS_endpoint), absl::GetFlag(FLAGS_https),
                                  absl::GetFlag(FLAGS_ec2_metadata), true};
   util::awsv2::AwsResult<std::vector<std::string>> buckets = client.ListBuckets();
   if (!buckets) {

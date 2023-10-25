@@ -7,6 +7,7 @@
 
 #include "util/awsv2/aws.h"
 #include "util/awsv2/credentials_provider.h"
+#include "util/awsv2/v4_signer.h"
 #include "util/http/http_clientv2.h"
 
 namespace util {
@@ -20,10 +21,16 @@ class Client {
 
   virtual ~Client() = default;
 
-  AwsResult<http::Response> Send(const http::Request& req);
+  AwsResult<http::Response> Send(http::Request req);
 
  private:
+  std::string endpoint_;
+
+  bool https_;
+
   http::ClientV2 client_;
+
+  V4Signer signer_;
 
   std::unique_ptr<CredentialsProvider> credentials_provider_;
 };

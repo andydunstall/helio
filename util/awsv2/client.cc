@@ -8,13 +8,12 @@
 namespace util {
 namespace awsv2 {
 
-Client::Client(const std::string& endpoint, bool https, bool ec2_metadata, bool sign_payload) {
+Client::Client(const std::string& endpoint, bool https, bool ec2_metadata, bool sign_payload)
+    : endpoint_{endpoint}, https_{https}, signer_{"us-east-1", "s3", sign_payload} {
   credentials_provider_ = std::make_unique<EnvironmentCredentialsProvider>();
 }
 
-AwsResult<http::Response> Client::Send(const http::Request& req) {
-  // TODO(andydunstall): Set scheme and host.
-
+AwsResult<http::Response> Client::Send(http::Request req) {
   // TODO(andydunstall): Set authorization header.
   // TODO(andydunstall): Handle errors and retries.
 
@@ -23,6 +22,18 @@ AwsResult<http::Response> Client::Send(const http::Request& req) {
     LOG(ERROR) << "aws: failed to load credentials";
     return nonstd::make_unexpected(AwsError::UNAUTHORIZED);
   }
+
+  if (https_) {
+    req.url.set_scheme("https");
+  } else {
+    req.url.set_scheme("http");
+  }
+  // TODO(andydunstall): Support endpoint with a port.
+  const std::string host = (endpoint_.empty()) ? "s3.amazonaws.com" : endpoint_;
+  req.url.set_host(host);
+  req.headers.emplace("host", host);
+
+  signer_.SignRequest(*creds, &req);
 
   client_.Send(req);
 

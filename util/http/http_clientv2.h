@@ -8,6 +8,7 @@
 #include <boost/beast/http/status.hpp>
 #include <boost/beast/http/verb.hpp>
 #include <boost/url/url.hpp>
+#include <map>
 
 #include "io/io.h"
 
@@ -19,6 +20,7 @@ namespace h2 = boost::beast::http;
 struct Request {
   h2::verb method;
   boost::urls::url url;
+  std::map<std::string, std::string> headers;
   absl::Span<uint8_t> body;
 };
 
