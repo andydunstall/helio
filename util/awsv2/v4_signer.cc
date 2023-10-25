@@ -61,6 +61,7 @@ void V4Signer::SignRequest(const Credentials& credentials, http::Request* req) {
   absl::Time now = absl::Now();
   std::string date_header = absl::FormatTime("%Y%m%dT%H%M00Z", now, absl::UTCTimeZone());
   req->headers.emplace("x-amz-date", date_header);
+  req->headers.emplace("x-amz-content-sha256", payload_hash);
 
   std::stringstream headers_stream;
   std::stringstream signed_headers_stream;
