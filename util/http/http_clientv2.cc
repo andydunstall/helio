@@ -42,7 +42,9 @@ HttpResult<Response> ClientV2::Send(const Request& req) {
     }
   }
 
-  h2::request<h2::string_body> http_req{req.method, req.url.path(), kHttpVersion1_1};
+  const std::string path = (req.url.path().empty()) ? "/" : req.url.path();
+
+  h2::request<h2::string_body> http_req{req.method, path, kHttpVersion1_1};
   for (const auto& header : req.headers) {
     http_req.set(header.first, header.second);
   }

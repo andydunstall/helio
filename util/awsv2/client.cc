@@ -29,9 +29,6 @@ AwsResult<http::Response> Client::Send(http::Request req) {
     req.url.set_scheme("http");
   }
   // TODO(andydunstall): Support endpoint with a port.
-  const std::string host = (endpoint_.empty()) ? "s3.amazonaws.com" : endpoint_;
-  req.url.set_host(host);
-  req.headers.emplace("host", host);
 
   signer_.SignRequest(*creds, &req);
 

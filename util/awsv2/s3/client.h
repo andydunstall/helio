@@ -19,7 +19,16 @@ class Client : public awsv2::Client {
 
   AwsResult<std::vector<std::string>> ListBuckets();
 
-  AwsResult<std::vector<std::string>> ListObjects(std::string_view bucket, std::string_view prefix);
+  AwsResult<std::vector<std::string>> ListObjects(std::string_view bucket,
+                                                  std::string_view prefix = "");
+
+  AwsResult<std::string> CreateMultipartUpload(std::string_view bucket, std::string_view key);
+
+  AwsResult<std::string> UploadPart(std::string_view bucket, std::string_view key, int part_number,
+                                    std::string_view upload_id, std::string_view body);
+
+  AwsResult<std::string> CompleteMultipartUpload(std::string_view bucket, std::string_view key,
+                                                  std::string_view upload_id);
 };
 
 }  // namespace s3

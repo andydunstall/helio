@@ -23,9 +23,10 @@ class Client {
 
   AwsResult<http::Response> Send(http::Request req);
 
- private:
+ protected:
   std::string endpoint_;
 
+ private:
   bool https_;
 
   http::ClientV2 client_;

@@ -37,6 +37,24 @@ void ListBuckets() {
   }
 }
 
+void ListObjects() {
+  util::awsv2::s3::Client client{absl::GetFlag(FLAGS_endpoint), absl::GetFlag(FLAGS_https),
+                                 absl::GetFlag(FLAGS_ec2_metadata), true};
+  util::awsv2::AwsResult<std::vector<std::string>> objects = client.ListObjects(absl::GetFlag(FLAGS_bucket));
+  if (!objects) {
+    // TODO ...
+    return;
+  }
+  if (objects->size() == 0) {
+    std::cout << "no objects found" << std::endl;
+    return;
+  }
+  std::cout << "objects:" << std::endl;
+  for (const std::string& name : *objects) {
+    std::cout << "* " << name << std::endl;
+  }
+}
+
 int main(int argc, char* argv[]) {
   MainInitGuard guard(&argc, &argv);
 
@@ -60,6 +78,8 @@ int main(int argc, char* argv[]) {
 
     if (cmd == "list-buckets") {
       ListBuckets();
+    } else if (cmd == "list-objects") {
+      ListObjects();
     } else {
       LOG(ERROR) << "unknown command: " << cmd;
     }

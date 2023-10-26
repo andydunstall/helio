@@ -83,7 +83,8 @@ void V4Signer::SignRequest(const Credentials& credentials, http::Request* req) {
   std::stringstream canonical_request_stream;
   canonical_request_stream << h2::to_string(req->method) << "\n";
   // TODO(andydunstall): URL encode path.
-  canonical_request_stream << req->url.path() << "\n";
+  const std::string path = (req->url.path().empty()) ? "/" : req->url.path();
+  canonical_request_stream << path << "\n";
   // TODO(andydunstall): Support query string.
   canonical_request_stream << "\n";
   canonical_request_stream << canonical_headers << "\n";
