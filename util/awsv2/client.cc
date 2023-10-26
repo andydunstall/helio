@@ -35,9 +35,14 @@ AwsResult<http::Response> Client::Send(http::Request req) {
 
   signer_.SignRequest(*creds, &req);
 
-  client_.Send(req);
+  http::HttpResult<http::Response> resp = client_.Send(req);
+  if (!resp) {
+    // TODO
+  }
 
-  return {};
+  // TODO if not 2xx ...
+
+  return *resp;
 }
 
 }  // namespace awsv2

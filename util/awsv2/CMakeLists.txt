@@ -1,6 +1,6 @@
 add_library(aws_lib aws.cc client.cc credentials_provider.cc v4_signer.cc)
 
-cxx_link(aws_lib io http_client_lib)
+cxx_link(aws_lib io http_client_lib TRDP::pugixml)
 
 add_subdirectory(s3)
 

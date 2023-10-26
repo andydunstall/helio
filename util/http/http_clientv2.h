@@ -30,7 +30,7 @@ struct Request {
 
 struct Response {
   h2::status status;
-  absl::Span<uint8_t> body;
+  std::string body;
 };
 
 enum class HttpError {

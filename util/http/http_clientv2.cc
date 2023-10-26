@@ -65,6 +65,7 @@ HttpResult<Response> ClientV2::Send(const Request& req) {
     return nonstd::make_unexpected(HttpError::NETWORK);
   }
 
+  // TODO ideally move the underlying string to avoid being freed
   h2::response<h2::string_body> http_resp;
   h2::read(adapter, buf_, http_resp, bec);
   if (bec) {
@@ -78,6 +79,7 @@ HttpResult<Response> ClientV2::Send(const Request& req) {
 
   Response resp{};
   resp.status = http_resp.result();
+  resp.body = std::move(http_resp.body());
 
   VLOG(1) << "http client: received response; status=" << resp.status;
 
