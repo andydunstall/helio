@@ -88,20 +88,20 @@ void V4Signer::SignRequest(const Credentials& credentials, http::Request* req) {
   canonical_request_stream << "\n";
   canonical_request_stream << canonical_headers << "\n";
   canonical_request_stream << signed_headers << "\n";
-  canonical_request_stream << payload_hash << "\n";
+  canonical_request_stream << payload_hash;
 
   const std::string canonical_request = canonical_request_stream.str();
   VLOG(1) << "aws: v4 signer: canonical request: " << canonical_request;
 
   std::string canonical_request_hash = Sha256String(canonical_request);
+
   std::string simple_date = absl::FormatTime("%Y%m%d", now, absl::UTCTimeZone());
 
   std::stringstream string_to_sign_stream;
   string_to_sign_stream << "AWS4-HMAC-SHA256"
                         << "\n";
-  string_to_sign_stream << simple_date << "\n";
-  // TODO(andydunstall): Configure region and service.
-  string_to_sign_stream << region_ << "/" << service_ << "/"
+  string_to_sign_stream << date_header << "\n";
+  string_to_sign_stream << simple_date << "/" << region_ << "/" << service_ << "/"
                         << "aws4_request"
                            "\n";
   string_to_sign_stream << canonical_request_hash;
