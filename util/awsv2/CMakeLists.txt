@@ -1,4 +1,4 @@
-add_library(aws_lib credentials_provider.cc http_client.cc v4_signer.cc)
+add_library(aws_lib client.cc credentials_provider.cc http_client.cc v4_signer.cc)
 
 cxx_link(aws_lib base http_client_lib boost_url)
 

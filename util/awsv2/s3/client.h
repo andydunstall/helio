@@ -12,6 +12,8 @@ namespace s3 {
 
 class Client : public awsv2::Client {
  public:
+  Client(const std::string& region);
+
   AwsResult<std::vector<std::string>> ListBuckets();
 };
 

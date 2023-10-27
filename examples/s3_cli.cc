@@ -11,7 +11,7 @@ ABSL_FLAG(std::string, cmd, "list-buckets", "Command to run");
 ABSL_FLAG(bool, epoll, false, "Whether to use epoll instead of io_uring");
 
 void ListBuckets() {
-  util::awsv2::s3::Client client{};
+  util::awsv2::s3::Client client{"us-east-1"};
   util::awsv2::AwsResult<std::vector<std::string>> buckets = client.ListBuckets();
   if (!buckets) {
     // TODO ...

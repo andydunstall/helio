@@ -7,6 +7,9 @@ namespace util {
 namespace awsv2 {
 namespace s3 {
 
+Client::Client(const std::string& region) : awsv2::Client{region, "s3"} {
+}
+
 AwsResult<std::vector<std::string>> Client::ListBuckets() {
   return {};
 }
