@@ -45,7 +45,7 @@ std::string SignedHeaders(const std::map<std::string, std::string>& headers) {
 
 std::string CanonicalRequest(const std::string& canonical_headers,
                              const std::string& signed_headers, const std::string& payload_hash,
-                             http::Request* req) {
+                             Request* req) {
   // TODO(andydunstall): URL encode path.
   const std::string path = (req->url.path().empty()) ? "/" : req->url.path();
 
@@ -86,7 +86,7 @@ V4Signer::V4Signer(const std::string& region, const std::string& service)
     : region_{region}, service_{service} {
 }
 
-void V4Signer::SignRequest(const Credentials& credentials, http::Request* req,
+void V4Signer::SignRequest(const Credentials& credentials, Request* req,
                            const absl::Time& time) const {
   if (!credentials.session_token.empty()) {
     req->headers.emplace("x-amz-security-token", credentials.session_token);

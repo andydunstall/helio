@@ -6,7 +6,7 @@
 #include <absl/time/clock.h>
 
 #include "util/awsv2/credentials.h"
-#include "util/http/clientv2.h"
+#include "util/awsv2/http_client.h"
 
 namespace util {
 namespace awsv2 {
@@ -20,7 +20,7 @@ class V4Signer {
   V4Signer(const std::string& region, const std::string& service);
 
   // Signs the request with the given credentials.
-  void SignRequest(const Credentials& credentials, http::Request* req,
+  void SignRequest(const Credentials& credentials, Request* req,
                    const absl::Time& time = absl::Now()) const;
 
  private:

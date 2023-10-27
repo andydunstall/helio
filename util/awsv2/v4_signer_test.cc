@@ -19,7 +19,7 @@ TEST_F(V4SignerTest, Sign) {
   creds.access_key_id = "key";
   creds.secret_access_key = "secret";
 
-  http::Request req;
+  Request req;
   req.method = h2::verb::get;
   req.url = boost::urls::url{"https://s3.amazonaws.com/foo"};
   req.headers = std::map<std::string, std::string>{
@@ -45,7 +45,7 @@ TEST_F(V4SignerTest, SignWithSecurityToken) {
   creds.secret_access_key = "secret";
   creds.session_token = "token";
 
-  http::Request req;
+  Request req;
   req.method = h2::verb::get;
   req.url = boost::urls::url{"https://s3.amazonaws.com/foo"};
   req.headers = std::map<std::string, std::string>{
