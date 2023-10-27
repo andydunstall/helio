@@ -57,7 +57,7 @@ HttpResult<Response> HttpClient::Send(const Request& req) {
   for (const auto& header : req.headers) {
     http_req.set(header.first, header.second);
   }
-  // TODO(andydunstall): Support body.
+  http_req.body() = req.body;
 
   h2::response<h2::string_body> http_resp;
   std::error_code ec = conn_->client->Send(http_req, &http_resp);
