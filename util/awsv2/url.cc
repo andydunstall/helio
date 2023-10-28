@@ -3,6 +3,8 @@
 
 #include "util/awsv2/url.h"
 
+#include <absl/strings/str_split.h>
+
 #include <cstring>
 #include <iomanip>
 #include <sstream>
@@ -87,8 +89,14 @@ void Url::SetHost(const std::string& host) {
 }
 
 void Url::SetPath(const std::string& path) {
-  // TODO(andydunstall): URL encode.
-  path_ = path;
+  std::stringstream ss;
+  const std::vector<std::string> segments = absl::StrSplit(path, "/");
+  for (const std::string& segment : segments) {
+    ss << UrlEncode(segment.c_str()) << "/";
+  }
+  std::string path_encoded = ss.str();
+  path_encoded.pop_back();
+  path_ = path_encoded;
 }
 
 void Url::AddParameter(const std::string& k, const std::string& v) {
