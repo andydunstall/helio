@@ -3,6 +3,9 @@
 
 #include "util/awsv2/s3/client.h"
 
+#include <absl/strings/str_format.h>
+#include <absl/strings/str_join.h>
+
 #include <pugixml.hpp>
 
 #include "base/logging.h"
@@ -22,14 +25,15 @@ AwsResult<ListBucketsResult> ListBucketsResult::Parse(std::string_view s) {
 
   const pugi::xml_node root = doc.child("ListAllMyBucketsResult");
   if (root.type() != pugi::node_element) {
-    LOG(ERROR) << "aws: s3 client: failed to parse list buckets response: count not find root node";
+    LOG(ERROR)
+        << "aws: s3 client: failed to parse list buckets response: buckets not find root node";
     return nonstd::make_unexpected(AwsError::INVALID_RESPONSE);
   }
 
   pugi::xml_node buckets = root.child("Buckets");
   if (root.type() != pugi::node_element) {
     LOG(ERROR)
-        << "aws: s3 client: failed to parse list buckets response: count not find buckets node";
+        << "aws: s3 client: failed to parse list buckets response: buckets not find buckets node";
     return nonstd::make_unexpected(AwsError::INVALID_RESPONSE);
   }
 
@@ -40,13 +44,45 @@ AwsResult<ListBucketsResult> ListBucketsResult::Parse(std::string_view s) {
   return result;
 }
 
+AwsResult<ListObjectsResult> ListObjectsResult::Parse(std::string_view s) {
+  LOG(INFO) << s;
+
+  pugi::xml_document doc;
+  const pugi::xml_parse_result xml_result = doc.load_buffer(s.data(), s.size());
+  if (!xml_result) {
+    LOG(ERROR) << "aws: s3 client: failed to parse list objects response: "
+               << xml_result.description();
+    return nonstd::make_unexpected(AwsError::INVALID_RESPONSE);
+  }
+
+  const pugi::xml_node root = doc.child("ListBucketResult");
+  if (root.type() != pugi::node_element) {
+    LOG(ERROR)
+        << "aws: s3 client: failed to parse list objects response: objects not find root node";
+    return nonstd::make_unexpected(AwsError::INVALID_RESPONSE);
+  }
+
+  ListObjectsResult result;
+  for (pugi::xml_node node = root.child("Contents"); node; node = node.next_sibling("Contents")) {
+    result.objects.push_back(node.child("Key").text().get());
+  }
+
+  bool truncated = root.child("IsTruncated").text().as_bool();
+  if (truncated) {
+    result.continuation_token = root.child("NextContinuationToken").text().get();
+  }
+
+  return result;
+}
+
 Client::Client(const std::string& region) : awsv2::Client{region, "s3"} {
 }
 
 AwsResult<std::vector<std::string>> Client::ListBuckets() {
   Request req;
   req.method = h2::verb::get;
-  req.url.set_host("s3.amazonaws.com");
+  req.url2.SetHost("s3.amazonaws.com");
+  req.url2.SetPath("/");
   req.headers.emplace("host", "s3.amazonaws.com");
 
   AwsResult<std::string> resp = Send(&req);
@@ -60,6 +96,54 @@ AwsResult<std::vector<std::string>> Client::ListBuckets() {
   }
 
   return result->buckets;
+}
+
+AwsResult<std::vector<std::string>> Client::ListObjects(std::string_view bucket,
+                                                        std::string_view prefix, size_t limit) {
+  std::vector<std::string> objects;
+  std::string continuation_token;
+  do {
+    Request req;
+    req.method = h2::verb::get;
+    req.url2.SetHost(std::string(bucket) + ".s3.amazonaws.com");
+    req.url2.SetPath("/");
+    req.headers.emplace("host", std::string(bucket) + ".s3.amazonaws.com");
+
+    // ListObjectsV2.
+    req.url2.AddParameter("list-type", "2");
+
+    if (!prefix.empty()) {
+      req.url2.AddParameter("prefix", std::string(prefix));
+    }
+
+    if (limit > 0) {
+      req.url2.AddParameter("max-keys", absl::StrFormat("%d", limit - objects.size()));
+    }
+    if (!continuation_token.empty()) {
+      req.url2.AddParameter("continuation-token", continuation_token);
+    }
+
+    AwsResult<std::string> resp = Send(&req);
+    if (!resp) {
+      return nonstd::make_unexpected(resp.error());
+    }
+
+    AwsResult<ListObjectsResult> result = ListObjectsResult::Parse(*resp);
+    if (!result) {
+      return nonstd::make_unexpected(result.error());
+    }
+
+    VLOG(1) << "aws: list objects; objects=" << result->objects.size()
+            << "; continuation_token=" << result->continuation_token;
+
+    objects.insert(objects.end(), result->objects.begin(), result->objects.end());
+    continuation_token = result->continuation_token;
+
+    if (limit > 0 && objects.size() >= limit) {
+      return objects;
+    }
+  } while (!continuation_token.empty());
+  return objects;
 }
 
 }  // namespace s3

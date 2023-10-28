@@ -1,20 +1,12 @@
 // Copyright 2023, Roman Gershman.  All rights reserved.
 // See LICENSE for licensing terms.
 
-#pragma once
-
-#include "io/io.h"
+#include "util/awsv2/url.h"
 
 namespace util {
 namespace awsv2 {
 
-enum class AwsError {
-  UNAUTHORIZED,
-  NETWORK,
-  INVALID_RESPONSE,
-};
-
-template <typename T> using AwsResult = io::Result<T, AwsError>;
+// TODO(andydunstall)
 
 }  // namespace awsv2
 }  // namespace util

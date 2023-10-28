@@ -42,6 +42,39 @@ TEST_F(ListBucketsResultTest, ParseInvalidXml) {
   EXPECT_EQ(AwsError::INVALID_RESPONSE, result.error());
 }
 
+class ListObjectsResultTest : public ::testing::Test {};
+
+TEST_F(ListObjectsResultTest, ParseOK) {
+  AwsResult<ListObjectsResult> result =
+      ListObjectsResult::Parse(R"(<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Name>my-bucket</Name>
+  <Prefix></Prefix>
+  <Marker>next-token</Marker>
+  <MaxKeys>1000</MaxKeys>
+  <IsTruncated>true</IsTruncated>
+  <Contents>
+    <Key>object-1</Key>
+    <LastModified>2023-10-24T06:50:53.000Z</LastModified>
+  </Contents>
+  <Contents>
+    <Key>object-2</Key>
+    <LastModified>2023-10-25T06:50:53.000Z</LastModified>
+  </Contents>
+</ListBucketResult>
+)");
+  EXPECT_TRUE(result);
+  std::vector<std::string> expected_objects{"object-1", "object-2"};
+  EXPECT_EQ(expected_objects, result->objects);
+  EXPECT_EQ("next-token", result->continuation_token);
+}
+
+TEST_F(ListObjectsResultTest, ParseInvalidXml) {
+  AwsResult<ListObjectsResult> result = ListObjectsResult::Parse("invalid...");
+  EXPECT_FALSE(result);
+  EXPECT_EQ(AwsError::INVALID_RESPONSE, result.error());
+}
+
 }  // namespace s3
 }  // namespace awsv2
 }  // namespace util

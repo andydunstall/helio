@@ -13,6 +13,7 @@
 #include <string>
 
 #include "io/io.h"
+#include "util/awsv2/url.h"
 #include "util/fiber_socket_base.h"
 #include "util/fibers/proactor_base.h"
 #include "util/http/http_client.h"
@@ -24,7 +25,7 @@ namespace h2 = boost::beast::http;
 
 struct Request {
   h2::verb method;
-  boost::urls::url url;
+  Url url2;
   std::map<std::string, std::string> headers;
   std::string_view body;
 };
@@ -34,6 +35,7 @@ struct Response {
   std::string body;
 };
 
+// TODO(andydunstall): Use AwsError.
 enum class HttpError {
   OK,
   // Failed to connect to the host.

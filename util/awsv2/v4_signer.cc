@@ -47,13 +47,11 @@ std::string CanonicalRequest(const std::string& canonical_headers,
                              const std::string& signed_headers, const std::string& payload_hash,
                              Request* req) {
   // TODO(andydunstall): URL encode path.
-  const std::string path = (req->url.path().empty()) ? "/" : req->url.path();
 
   std::stringstream ss;
   ss << h2::to_string(req->method) << "\n";
-  ss << path << "\n";
-  // TODO(andydunstall): Support query string.
-  ss << "\n";
+  ss << req->url2.path() << "\n";
+  ss << req->url2.QueryString() << "\n";
   ss << canonical_headers << "\n";
   ss << signed_headers << "\n";
   ss << payload_hash;

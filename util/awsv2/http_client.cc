@@ -35,24 +35,19 @@ HttpClient::~HttpClient() {
 }
 
 HttpResult<Response> HttpClient::Send(const Request& req) {
-  VLOG(1) << "http client: send request; method=" << h2::to_string(req.method)
-          << "; url=" << req.url.buffer();
-
-  uint16_t port = req.url.port_number();
-  if (port == 0) {
-    if (req.url.scheme() == "http") {
-      port = kHttpPort;
-    }
-    if (req.url.scheme() == "https") {
-      port = kHttpsPort;
-    }
+  std::string path = req.url2.path();
+  if (!req.url2.QueryString().empty()) {
+    path += "?";
+    path += req.url2.QueryString();
   }
 
-  if (!Connect(req.url.host(), port, req.url.scheme() == "https")) {
+  VLOG(1) << "http client: send request; method=" << h2::to_string(req.method)
+          << "; url=" << req.url2.String();
+
+  if (!Connect(req.url2.host(), req.url2.port(), req.url2.scheme() == Scheme::HTTPS)) {
     return nonstd::make_unexpected(HttpError::CONNECT);
   }
 
-  const std::string path = (req.url.path().empty()) ? "/" : req.url.path();
   h2::request<h2::string_body> http_req{req.method, path, kHttpVersion1_1};
   for (const auto& header : req.headers) {
     http_req.set(header.first, header.second);
@@ -63,7 +58,7 @@ HttpResult<Response> HttpClient::Send(const Request& req) {
   std::error_code ec = conn_->client->Send(http_req, &http_resp);
   if (ec) {
     LOG(WARNING) << "http client: failed to send request; method=" << h2::to_string(req.method)
-                 << "; url=" << req.url.buffer();
+                 << "; url=" << req.url2.String();
 
     // Discard the cached connection.
     conn_ = std::nullopt;

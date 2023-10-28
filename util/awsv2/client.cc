@@ -20,13 +20,13 @@ AwsResult<std::string> Client::Send(Request* req) {
     return nonstd::make_unexpected(AwsError::UNAUTHORIZED);
   }
 
-  req->url.set_scheme("https");
+  req->url2.SetScheme(Scheme::HTTP);
 
   signer_.SignRequest(*creds, req);
 
   HttpResult<Response> resp = client_.Send(*req);
   if (!resp) {
-    // TODO
+    return nonstd::make_unexpected(AwsError::NETWORK);
   }
 
   if (h2::to_status_class(resp->status) != h2::status_class::successful) {
