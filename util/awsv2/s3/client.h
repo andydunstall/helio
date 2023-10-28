@@ -23,6 +23,12 @@ struct ListObjectsResult {
   static AwsResult<ListObjectsResult> Parse(std::string_view s);
 };
 
+struct CreateMultipartUploadResult {
+  std::string upload_id;
+
+  static AwsResult<CreateMultipartUploadResult> Parse(std::string_view s);
+};
+
 struct GetObjectResult {
   std::string body;
   size_t object_size;
@@ -43,6 +49,15 @@ class Client : public awsv2::Client {
 
   AwsResult<GetObjectResult> GetObject(std::string_view bucket, std::string_view key,
                                        std::string_view range);
+
+  AwsResult<std::string> CreateMultipartUpload(std::string_view bucket, std::string_view key);
+
+  AwsResult<std::string> UploadPart(std::string_view bucket, std::string_view key, int part_number,
+                                    std::string_view upload_id, std::string_view part);
+
+  AwsResult<void> CompleteMultipartUpload(std::string_view bucket, std::string_view key,
+                                          std::string_view upload_id,
+                                          const std::vector<std::string>& parts);
 };
 
 }  // namespace s3

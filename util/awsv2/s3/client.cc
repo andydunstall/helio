@@ -74,6 +74,27 @@ AwsResult<ListObjectsResult> ListObjectsResult::Parse(std::string_view s) {
   return result;
 }
 
+// TODO(andydunstall): Unit test.
+AwsResult<CreateMultipartUploadResult> CreateMultipartUploadResult::Parse(std::string_view s) {
+  pugi::xml_document doc;
+  const pugi::xml_parse_result xml_result = doc.load_buffer(s.data(), s.size());
+  if (!xml_result) {
+    LOG(ERROR) << "aws: s3 client: failed to parse create multipart upload response: "
+               << xml_result.description();
+    return nonstd::make_unexpected(AwsError::INVALID_RESPONSE);
+  }
+
+  const pugi::xml_node root = doc.child("InitiateMultipartUploadResult");
+  if (root.type() != pugi::node_element) {
+    LOG(ERROR) << "aws: s3 client: failed to parse list objects response: root node not found";
+    return nonstd::make_unexpected(AwsError::INVALID_RESPONSE);
+  }
+
+  CreateMultipartUploadResult result;
+  result.upload_id = root.child("UploadId").text().get();
+  return result;
+}
+
 Client::Client(const std::string& region) : awsv2::Client{region, "s3"} {
 }
 
@@ -159,8 +180,6 @@ AwsResult<GetObjectResult> Client::GetObject(std::string_view bucket, std::strin
     return nonstd::make_unexpected(resp.error());
   }
 
-  std::cout << resp->body.size() << std::endl;
-
   GetObjectResult result;
   result.body = std::move(resp->body);
 
@@ -181,6 +200,58 @@ AwsResult<GetObjectResult> Client::GetObject(std::string_view bucket, std::strin
   }
 
   return result;
+}
+
+AwsResult<std::string> Client::CreateMultipartUpload(std::string_view bucket,
+                                                     std::string_view key) {
+  Request req;
+  req.method = h2::verb::post;
+  req.url2.SetHost(std::string(bucket) + ".s3.amazonaws.com");
+  req.url2.SetPath(absl::StrCat("/", key));
+  req.url2.AddParameter("uploads", "");
+  req.headers.emplace("host", std::string(bucket) + ".s3.amazonaws.com");
+
+  AwsResult<Response> resp = Send(&req);
+  if (!resp) {
+    return nonstd::make_unexpected(resp.error());
+  }
+
+  CreateMultipartUploadResult::Parse(resp->body);
+
+  AwsResult<CreateMultipartUploadResult> result = CreateMultipartUploadResult::Parse(resp->body);
+  if (!result) {
+    return nonstd::make_unexpected(result.error());
+  }
+
+  VLOG(1) << "aws: created multipart upload; upload_id=" << result->upload_id;
+
+  return result->upload_id;
+}
+
+AwsResult<std::string> Client::UploadPart(std::string_view bucket, std::string_view key,
+                                          int part_number, std::string_view upload_id,
+                                          std::string_view part) {
+  Request req;
+  req.method = h2::verb::put;
+  req.url2.SetHost(std::string(bucket) + ".s3.amazonaws.com");
+  req.url2.SetPath(absl::StrCat("/", key));
+  req.url2.AddParameter("partNumber", absl::StrFormat("%d", part_number));
+  req.url2.AddParameter("uploadId", std::string(upload_id));
+  req.headers.emplace("host", std::string(bucket) + ".s3.amazonaws.com");
+  req.body = part;
+  req.headers.emplace("content-length", absl::StrFormat("%d", part.size()));
+
+  AwsResult<Response> resp = Send(&req);
+  if (!resp) {
+    return nonstd::make_unexpected(resp.error());
+  }
+
+  return resp->headers["ETag"];
+}
+
+AwsResult<void> Client::CompleteMultipartUpload(std::string_view bucket, std::string_view key,
+                                                std::string_view upload_id,
+                                                const std::vector<std::string>& parts) {
 }
 
 }  // namespace s3
