@@ -26,7 +26,6 @@ struct ListObjectsResult {
 struct GetObjectResult {
   std::string body;
   size_t object_size;
-  std::string range;
 };
 
 class Client : public awsv2::Client {

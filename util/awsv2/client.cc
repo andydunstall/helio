@@ -13,7 +13,7 @@ Client::Client(const std::string& region, const std::string& service)
   credentials_provider_ = std::make_unique<EnvironmentCredentialsProvider>();
 }
 
-AwsResult<std::string> Client::Send(Request* req) {
+AwsResult<Response> Client::Send(Request* req) {
   std::optional<Credentials> creds = credentials_provider_->LoadCredentials();
   if (!creds) {
     LOG(ERROR) << "aws: failed to load credentials";
@@ -34,7 +34,7 @@ AwsResult<std::string> Client::Send(Request* req) {
     // TODO
   }
 
-  return resp->body;
+  return *resp;
 }
 
 }  // namespace awsv2

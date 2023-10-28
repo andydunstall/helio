@@ -69,6 +69,9 @@ HttpResult<Response> HttpClient::Send(const Request& req) {
   Response resp{};
   resp.status = http_resp.result();
   resp.body = std::move(http_resp.body());
+  for (const auto& h : http_resp.base()) {
+    resp.headers.emplace(std::string(h.name_string()), std::string(h.value()));
+  }
 
   VLOG(1) << "http client: received response; status=" << resp.status;
 

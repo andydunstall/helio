@@ -5,6 +5,7 @@
 
 #include <absl/strings/str_format.h>
 #include <absl/strings/str_join.h>
+#include <absl/strings/str_split.h>
 
 #include <pugixml.hpp>
 
@@ -83,12 +84,12 @@ AwsResult<std::vector<std::string>> Client::ListBuckets() {
   req.url2.SetPath("/");
   req.headers.emplace("host", "s3.amazonaws.com");
 
-  AwsResult<std::string> resp = Send(&req);
+  AwsResult<Response> resp = Send(&req);
   if (!resp) {
     return nonstd::make_unexpected(resp.error());
   }
 
-  AwsResult<ListBucketsResult> result = ListBucketsResult::Parse(*resp);
+  AwsResult<ListBucketsResult> result = ListBucketsResult::Parse(resp->body);
   if (!result) {
     return nonstd::make_unexpected(result.error());
   }
@@ -121,12 +122,12 @@ AwsResult<std::vector<std::string>> Client::ListObjects(std::string_view bucket,
       req.url2.AddParameter("continuation-token", continuation_token);
     }
 
-    AwsResult<std::string> resp = Send(&req);
+    AwsResult<Response> resp = Send(&req);
     if (!resp) {
       return nonstd::make_unexpected(resp.error());
     }
 
-    AwsResult<ListObjectsResult> result = ListObjectsResult::Parse(*resp);
+    AwsResult<ListObjectsResult> result = ListObjectsResult::Parse(resp->body);
     if (!result) {
       return nonstd::make_unexpected(result.error());
     }
@@ -146,7 +147,40 @@ AwsResult<std::vector<std::string>> Client::ListObjects(std::string_view bucket,
 
 AwsResult<GetObjectResult> Client::GetObject(std::string_view bucket, std::string_view key,
                                              std::string_view range) {
-  // TODO(andydunstall)
+  Request req;
+  req.method = h2::verb::get;
+  req.url2.SetHost(std::string(bucket) + ".s3.amazonaws.com");
+  req.url2.SetPath(absl::StrCat("/", key));
+  req.headers.emplace("host", std::string(bucket) + ".s3.amazonaws.com");
+  req.headers.emplace("range", range);
+
+  AwsResult<Response> resp = Send(&req);
+  if (!resp) {
+    return nonstd::make_unexpected(resp.error());
+  }
+
+  std::cout << resp->body.size() << std::endl;
+
+  GetObjectResult result;
+  result.body = std::move(resp->body);
+
+  if (resp->headers["content-range"] == "") {
+    result.object_size = result.body.size();
+  } else {
+    std::vector<std::string_view> parts = absl::StrSplit(resp->headers["content-range"], "/");
+    if (parts.size() < 2) {
+      LOG(ERROR) << "aws: s3 read file: failed to parse file size: range="
+                 << resp->headers["content-range"];
+      // TODO return std::make_error_code(std::errc::io_error);
+    }
+    if (!absl::SimpleAtoi(parts[1], &result.object_size)) {
+      LOG(ERROR) << "aws: s3 read file: failed to parse file size: range="
+                 << resp->headers["content-range"];
+      // TODO return std::make_error_code(std::errc::io_error);
+    }
+  }
+
+  return result;
 }
 
 }  // namespace s3

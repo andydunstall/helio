@@ -17,7 +17,7 @@ class Client {
  public:
   Client(const std::string& region, const std::string& service);
 
-  AwsResult<std::string> Send(Request* req);
+  AwsResult<Response> Send(Request* req);
 
  private:
   HttpClient client_;

@@ -5,10 +5,12 @@
 #include "base/init.h"
 #include "base/logging.h"
 #include "util/awsv2/s3/client.h"
+#include "util/awsv2/s3/read_file.h"
 #include "util/fibers/pool.h"
 
 ABSL_FLAG(std::string, cmd, "list-buckets", "Command to run");
 ABSL_FLAG(std::string, bucket, "", "Target bucket");
+ABSL_FLAG(std::string, key, "", "Upload/download key");
 ABSL_FLAG(std::string, prefix, "", "List objects prefix");
 ABSL_FLAG(bool, epoll, false, "Whether to use epoll instead of io_uring");
 
@@ -52,6 +54,40 @@ void ListObjects() {
   }
 }
 
+void Download() {
+  if (absl::GetFlag(FLAGS_bucket) == "") {
+    LOG(ERROR) << "missing bucket name";
+    return;
+  }
+
+  if (absl::GetFlag(FLAGS_key) == "") {
+    LOG(ERROR) << "missing key";
+    return;
+  }
+
+  std::shared_ptr<util::awsv2::s3::Client> client =
+      std::make_shared<util::awsv2::s3::Client>("us-east-1");
+  std::unique_ptr<io::ReadonlyFile> file = std::make_unique<util::awsv2::s3::ReadFile>(
+      absl::GetFlag(FLAGS_bucket), absl::GetFlag(FLAGS_key), client);
+
+  LOG(INFO) << "downloading s3 file";
+
+  std::vector<uint8_t> buf(1024, 0);
+  size_t read_n = 0;
+  while (true) {
+    io::Result<size_t> n = file->Read(read_n, io::MutableBytes(buf.data(), buf.size()));
+    if (!n) {
+      LOG(ERROR) << "failed to read from s3: " << n.error();
+      return;
+    }
+    if (*n == 0) {
+      LOG(INFO) << "finished download; read_n=" << read_n;
+      return;
+    }
+    read_n += *n;
+  }
+}
+
 int main(int argc, char* argv[]) {
   MainInitGuard guard(&argc, &argv);
 
@@ -77,6 +113,8 @@ int main(int argc, char* argv[]) {
       ListBuckets();
     } else if (cmd == "list-objects") {
       ListObjects();
+    } else if (cmd == "download") {
+      Download();
     } else {
       LOG(ERROR) << "unknown command: " << cmd;
     }

@@ -33,6 +33,7 @@ struct Request {
 struct Response {
   h2::status status;
   std::string body;
+  std::map<std::string, std::string> headers;
 };
 
 // TODO(andydunstall): Use AwsError.
