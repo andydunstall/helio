@@ -20,6 +20,8 @@ AwsResult<std::string> Client::Send(Request* req) {
     return nonstd::make_unexpected(AwsError::UNAUTHORIZED);
   }
 
+  req->url.set_scheme("https");
+
   signer_.SignRequest(*creds, req);
 
   HttpResult<Response> resp = client_.Send(*req);

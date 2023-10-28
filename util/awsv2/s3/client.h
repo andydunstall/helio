@@ -10,6 +10,12 @@ namespace util {
 namespace awsv2 {
 namespace s3 {
 
+struct ListBucketsResult {
+  std::vector<std::string> buckets;
+
+  static AwsResult<ListBucketsResult> Parse(std::string_view s);
+};
+
 class Client : public awsv2::Client {
  public:
   Client(const std::string& region);

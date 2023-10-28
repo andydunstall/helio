@@ -10,6 +10,7 @@ namespace awsv2 {
 
 enum class AwsError {
   UNAUTHORIZED,
+  INVALID_RESPONSE,
 };
 
 template <typename T> using AwsResult = io::Result<T, AwsError>;
