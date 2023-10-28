@@ -23,6 +23,12 @@ struct ListObjectsResult {
   static AwsResult<ListObjectsResult> Parse(std::string_view s);
 };
 
+struct GetObjectResult {
+  std::string body;
+  size_t object_size;
+  std::string range;
+};
+
 class Client : public awsv2::Client {
  public:
   Client(const std::string& region);
@@ -35,6 +41,9 @@ class Client : public awsv2::Client {
   // Returns up to the given limit, or all objects if the limit is 0.
   AwsResult<std::vector<std::string>> ListObjects(std::string_view bucket, std::string_view prefix,
                                                   size_t limit = 0);
+
+  AwsResult<GetObjectResult> GetObject(std::string_view bucket, std::string_view key,
+                                       std::string_view range);
 };
 
 }  // namespace s3

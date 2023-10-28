@@ -45,8 +45,6 @@ AwsResult<ListBucketsResult> ListBucketsResult::Parse(std::string_view s) {
 }
 
 AwsResult<ListObjectsResult> ListObjectsResult::Parse(std::string_view s) {
-  LOG(INFO) << s;
-
   pugi::xml_document doc;
   const pugi::xml_parse_result xml_result = doc.load_buffer(s.data(), s.size());
   if (!xml_result) {
@@ -144,6 +142,11 @@ AwsResult<std::vector<std::string>> Client::ListObjects(std::string_view bucket,
     }
   } while (!continuation_token.empty());
   return objects;
+}
+
+AwsResult<GetObjectResult> Client::GetObject(std::string_view bucket, std::string_view key,
+                                             std::string_view range) {
+  // TODO(andydunstall)
 }
 
 }  // namespace s3

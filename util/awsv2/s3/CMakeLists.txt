@@ -1,4 +1,4 @@
-add_library(s3_lib client.cc)
+add_library(s3_lib client.cc read_file.cc write_file.cc)
 
 cxx_link(s3_lib aws_lib TRDP::pugixml)
 

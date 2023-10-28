@@ -30,6 +30,7 @@ AwsResult<std::string> Client::Send(Request* req) {
   }
 
   if (h2::to_status_class(resp->status) != h2::status_class::successful) {
+    LOG(INFO) << resp->body;
     // TODO
   }
 
