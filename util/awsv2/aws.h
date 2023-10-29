@@ -35,6 +35,7 @@ enum class AwsErrorType {
   NETWORK,
   INVALID_RESPONSE,
   ACCESS_DENIED,
+  INVALID_TOKEN,
   RESOURCE_NOT_FOUND,
   UNKNOWN,
 };
@@ -49,6 +50,8 @@ struct AwsError {
   bool retryable;
 
   std::string ToString() const;
+
+  static AwsError Parse(std::string_view s);
 };
 
 template <typename T> using AwsResult = io::Result<T, AwsError>;

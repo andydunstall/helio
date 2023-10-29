@@ -3,6 +3,8 @@
 
 #include "util/awsv2/client.h"
 
+#include <pugixml.hpp>
+
 namespace util {
 namespace awsv2 {
 
@@ -63,9 +65,9 @@ AwsResult<Response> Client::SendAttempt(Request req) {
       return nonstd::make_unexpected(HttpStatusToAwsError(resp->status));
     }
 
-    // TODO(andydunstall): Handle error body. See S3ErrorMarshaller,
-    // XmlErrorMarshaller, and ErrorMarshaller.
-    return nonstd::make_unexpected(HttpStatusToAwsError(resp->status));
+    AwsError err = AwsError::Parse(resp->body);
+    err.retryable = IsHttpStatusRetryable(resp->status);
+    return nonstd::make_unexpected(err);
   }
 
   return resp;
