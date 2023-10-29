@@ -6,13 +6,17 @@
 #include "base/logging.h"
 #include "util/awsv2/credentials_provider.h"
 #include "util/awsv2/s3/client.h"
+#include "util/awsv2/s3/read_file.h"
 #include "util/fibers/pool.h"
 
 ABSL_FLAG(std::string, cmd, "list-buckets", "Command to run");
 ABSL_FLAG(std::string, bucket, "", "Target bucket");
 ABSL_FLAG(std::string, prefix, "", "List objects prefix");
-ABSL_FLAG(bool, https, true, "Whether to use HTTPS");
+ABSL_FLAG(std::string, key, "", "Upload/download key");
+ABSL_FLAG(size_t, upload_size, 100 << 20, "Upload file size");
+ABSL_FLAG(size_t, chunk_size, 1024, "File chunk size");
 ABSL_FLAG(bool, epoll, false, "Whether to use epoll instead of io_uring");
+ABSL_FLAG(bool, https, true, "Whether to use HTTPS");
 
 void ListBuckets() {
   util::awsv2::Config config;
@@ -66,6 +70,46 @@ void ListObjects() {
   }
 }
 
+void Download() {
+  if (absl::GetFlag(FLAGS_bucket) == "") {
+    LOG(ERROR) << "missing bucket name";
+    return;
+  }
+
+  if (absl::GetFlag(FLAGS_key) == "") {
+    LOG(ERROR) << "missing key";
+    return;
+  }
+
+  util::awsv2::Config config;
+  config.region = "us-east-1";
+  config.https = absl::GetFlag(FLAGS_https);
+
+  std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
+      std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
+  std::shared_ptr<util::awsv2::s3::Client> client =
+      std::make_shared<util::awsv2::s3::Client>(config, std::move(credentials_provider));
+  std::unique_ptr<io::ReadonlyFile> file = std::make_unique<util::awsv2::s3::ReadFile>(
+      absl::GetFlag(FLAGS_bucket), absl::GetFlag(FLAGS_key), client);
+
+  LOG(INFO) << "downloading s3 file";
+
+  std::vector<uint8_t> buf(1024, 0);
+  size_t read_n = 0;
+  while (true) {
+    io::Result<size_t> n = file->Read(read_n, io::MutableBytes(buf.data(), buf.size()));
+    if (!n) {
+      LOG(ERROR) << "failed to read from s3";
+      return;
+    }
+    if (*n == 0) {
+      LOG(INFO) << "finished download; read_n=" << read_n;
+      return;
+    }
+    read_n += *n;
+  }
+}
+
 int main(int argc, char* argv[]) {
   MainInitGuard guard(&argc, &argv);
 
@@ -91,6 +135,8 @@ int main(int argc, char* argv[]) {
       ListBuckets();
     } else if (cmd == "list-objects") {
       ListObjects();
+    } else if (cmd == "download") {
+      Download();
     } else {
       LOG(ERROR) << "unknown command: " << cmd;
     }

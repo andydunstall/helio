@@ -3,6 +3,8 @@
 
 #include "util/awsv2/s3/client.h"
 
+#include <absl/strings/str_split.h>
+
 #include <pugixml.hpp>
 
 #include "base/logging.h"
@@ -136,6 +138,39 @@ AwsResult<std::vector<std::string>> Client::ListObjects(std::string_view bucket,
     }
   } while (!continuation_token.empty());
   return objects;
+}
+
+AwsResult<GetObjectResult> Client::GetObject(std::string_view bucket, std::string_view key,
+                                             std::string_view range) {
+  Request req;
+  req.method = h2::verb::get;
+  req.url.SetHost(std::string(bucket) + ".s3.amazonaws.com");
+  req.url.SetPath(absl::StrCat("/", key));
+  req.headers.emplace("range", range);
+
+  AwsResult<Response> resp = Send(req);
+  if (!resp) {
+    return nonstd::make_unexpected(resp.error());
+  }
+
+  GetObjectResult result;
+  result.body = std::move(resp->body);
+
+  if (resp->headers["content-range"] == "") {
+    result.object_size = result.body.size();
+  } else {
+    std::vector<std::string_view> parts = absl::StrSplit(resp->headers["content-range"], "/");
+    if (parts.size() < 2) {
+      return nonstd::make_unexpected(AwsError{AwsErrorType::INVALID_RESPONSE,
+                                              "parse get object response: invalid range", false});
+    }
+    if (!absl::SimpleAtoi(parts[1], &result.object_size)) {
+      return nonstd::make_unexpected(AwsError{AwsErrorType::INVALID_RESPONSE,
+                                              "parse get object response: invalid range", false});
+    }
+  }
+
+  return result;
 }
 
 }  // namespace s3
