@@ -69,6 +69,49 @@ AwsResult<ListObjectsResult> ListObjectsResult::Parse(std::string_view s) {
   return result;
 }
 
+AwsResult<CreateMultipartUploadResult> CreateMultipartUploadResult::Parse(std::string_view s) {
+  pugi::xml_document doc;
+  const pugi::xml_parse_result xml_result = doc.load_buffer(s.data(), s.size());
+  if (!xml_result) {
+    return nonstd::make_unexpected(AwsError{AwsErrorType::INVALID_RESPONSE,
+                                            "parse create multipart upload response: invalid xml",
+                                            false});
+  }
+
+  const pugi::xml_node root = doc.child("InitiateMultipartUploadResult");
+  if (root.type() != pugi::node_element) {
+    return nonstd::make_unexpected(AwsError{
+        AwsErrorType::INVALID_RESPONSE,
+        "parse create multipart upload response: InitiateMultipartUploadResult not found", false});
+  }
+
+  CreateMultipartUploadResult result;
+  result.upload_id = root.child("UploadId").text().get();
+  return result;
+}
+
+AwsResult<CompleteMultipartUploadResult> CompleteMultipartUploadResult::Parse(std::string_view s) {
+  pugi::xml_document doc;
+  const pugi::xml_parse_result xml_result = doc.load_buffer(s.data(), s.size());
+  if (!xml_result) {
+    return nonstd::make_unexpected(AwsError{AwsErrorType::INVALID_RESPONSE,
+                                            "parse complete multipart upload response: invalid xml",
+                                            false});
+  }
+
+  const pugi::xml_node root = doc.child("CompleteMultipartUploadResult");
+  if (root.type() != pugi::node_element) {
+    return nonstd::make_unexpected(AwsError{
+        AwsErrorType::INVALID_RESPONSE,
+        "parse complete multipart upload response: CompleteMultipartUploadResult not found",
+        false});
+  }
+
+  CompleteMultipartUploadResult result;
+  result.etag = root.child("ETag").text().get();
+  return result;
+}
+
 Client::Client(const Config& config,
                std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider)
     : awsv2::Client{config, std::move(credentials_provider), "s3"} {
@@ -171,6 +214,91 @@ AwsResult<GetObjectResult> Client::GetObject(std::string_view bucket, std::strin
   }
 
   return result;
+}
+
+AwsResult<std::string> Client::CreateMultipartUpload(std::string_view bucket,
+                                                     std::string_view key) {
+  Request req;
+  req.method = h2::verb::post;
+  req.url.SetHost(std::string(bucket) + ".s3.amazonaws.com");
+  req.url.SetPath(absl::StrCat("/", key));
+  req.url.AddParam("uploads", "");
+
+  AwsResult<Response> resp = Send(req);
+  if (!resp) {
+    return nonstd::make_unexpected(resp.error());
+  }
+
+  CreateMultipartUploadResult::Parse(resp->body);
+
+  AwsResult<CreateMultipartUploadResult> result = CreateMultipartUploadResult::Parse(resp->body);
+  if (!result) {
+    return nonstd::make_unexpected(result.error());
+  }
+
+  VLOG(1) << "aws: created multipart upload; upload_id=" << result->upload_id;
+
+  return result->upload_id;
+}
+
+AwsResult<std::string> Client::UploadPart(std::string_view bucket, std::string_view key,
+                                          int part_number, std::string_view upload_id,
+                                          std::string_view part) {
+  Request req;
+  req.method = h2::verb::put;
+  req.url.SetHost(std::string(bucket) + ".s3.amazonaws.com");
+  req.url.SetPath(absl::StrCat("/", key));
+  req.url.AddParam("partNumber", absl::StrFormat("%d", part_number));
+  req.url.AddParam("uploadId", std::string(upload_id));
+  req.body = part;
+  req.headers.emplace("content-length", absl::StrFormat("%d", part.size()));
+
+  AwsResult<Response> resp = Send(req);
+  if (!resp) {
+    return nonstd::make_unexpected(resp.error());
+  }
+
+  return resp->headers["ETag"];
+}
+
+AwsResult<std::string> Client::CompleteMultipartUpload(std::string_view bucket,
+                                                       std::string_view key,
+                                                       std::string_view upload_id,
+                                                       const std::vector<std::string>& parts) {
+  std::stringstream ss;
+  ss << "<?xml version=\"1.0\"?>";
+  ss << "<CompleteMultipartUpload xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">";
+  for (size_t i = 0; i != parts.size(); i++) {
+    const int part_number = i + 1;
+    const std::string& etag = parts[i];
+    ss << "<Part>";
+    ss << "<ETag>\"" << etag << "\"</ETag>";
+    ss << "<PartNumber>" << part_number << "</PartNumber>";
+    ss << "</Part>";
+  }
+  ss << "</CompleteMultipartUpload>";
+  const std::string body = ss.str();
+
+  Request req;
+  req.method = h2::verb::post;
+  req.url.SetHost(std::string(bucket) + ".s3.amazonaws.com");
+  req.url.SetPath(absl::StrCat("/", key));
+  req.url.AddParam("uploadId", std::string(upload_id));
+  req.body = body;
+  req.headers.emplace("content-length", absl::StrFormat("%d", body.size()));
+
+  AwsResult<Response> resp = Send(req);
+  if (!resp) {
+    return nonstd::make_unexpected(resp.error());
+  }
+
+  AwsResult<CompleteMultipartUploadResult> result =
+      CompleteMultipartUploadResult::Parse(resp->body);
+  if (!result) {
+    return nonstd::make_unexpected(result.error());
+  }
+
+  return result->etag;
 }
 
 }  // namespace s3

@@ -75,6 +75,30 @@ TEST_F(ListObjectsResultTest, ParseInvalidXml) {
   EXPECT_EQ(AwsErrorType::INVALID_RESPONSE, result.error().type);
 }
 
+class CreateMultipartUploadResultTest : public ::testing::Test {};
+
+TEST_F(CreateMultipartUploadResultTest, ParseOK) {
+  AwsResult<CreateMultipartUploadResult> result =
+      CreateMultipartUploadResult::Parse(R"(<?xml version="1.0" encoding="UTF-8"?>
+<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>my-bucket</Bucket>
+  <Key>my-key</Key>
+  <UploadId>GOgaWEOwDuay8huOkaR2TNKljuFU7JuSrFEQ6GnWXKXpKrJJlJ7u7kJt9JG2VUcJDZTsZGXgCGiLwUESmOgTTMH7SGCSanXtFlUArG.hgTjLMyHtq_FyAH83fUuWADjOTamlAgwkAI_7IWvcOo.mGw--</UploadId>
+</InitiateMultipartUploadResult>)");
+  EXPECT_TRUE(result);
+  EXPECT_EQ(
+      "GOgaWEOwDuay8huOkaR2TNKljuFU7JuSrFEQ6GnWXKXpKrJJlJ7u7kJt9JG2VUcJDZTsZGXgCGiLwUESmOgTTMH7SGCS"
+      "anXtFlUArG.hgTjLMyHtq_FyAH83fUuWADjOTamlAgwkAI_7IWvcOo.mGw--",
+      result->upload_id);
+}
+
+TEST_F(CreateMultipartUploadResultTest, ParseInvalidXml) {
+  AwsResult<CreateMultipartUploadResult> result =
+      CreateMultipartUploadResult::Parse("invalid xml...");
+  EXPECT_FALSE(result);
+  EXPECT_EQ(AwsErrorType::INVALID_RESPONSE, result.error().type);
+}
+
 }  // namespace s3
 }  // namespace awsv2
 }  // namespace util

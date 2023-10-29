@@ -98,7 +98,6 @@ void V4Signer::SignRequest(const Credentials& credentials, Request* req,
   std::string payload_hash = kUnsignedPayload;
   if (req->url.scheme() != Scheme::HTTPS) {
     payload_hash = Sha256String(req->body);
-    req->headers.emplace("x-amz-checksum-sha256", absl::Base64Escape(payload_hash));
 
     VLOG(1) << "aws: v4 signer: payload hash: " << payload_hash;
   }

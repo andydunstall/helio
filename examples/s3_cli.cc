@@ -7,6 +7,7 @@
 #include "util/awsv2/credentials_provider.h"
 #include "util/awsv2/s3/client.h"
 #include "util/awsv2/s3/read_file.h"
+#include "util/awsv2/s3/write_file.h"
 #include "util/fibers/pool.h"
 
 ABSL_FLAG(std::string, cmd, "list-buckets", "Command to run");
@@ -67,6 +68,52 @@ void ListObjects() {
   std::cout << "objects:" << std::endl;
   for (const std::string& name : *objects) {
     std::cout << "* " << name << std::endl;
+  }
+}
+
+void Upload() {
+  if (absl::GetFlag(FLAGS_bucket) == "") {
+    LOG(ERROR) << "missing bucket name";
+    return;
+  }
+
+  if (absl::GetFlag(FLAGS_key) == "") {
+    LOG(ERROR) << "missing key";
+    return;
+  }
+
+  util::awsv2::Config config;
+  config.region = "us-east-1";
+  config.https = absl::GetFlag(FLAGS_https);
+
+  std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
+      std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
+  std::shared_ptr<util::awsv2::s3::Client> client =
+      std::make_shared<util::awsv2::s3::Client>(config, std::move(credentials_provider));
+  util::awsv2::AwsResult<util::awsv2::s3::WriteFile> file = util::awsv2::s3::WriteFile::Open(
+      absl::GetFlag(FLAGS_bucket), absl::GetFlag(FLAGS_key), client);
+  if (!file) {
+    LOG(ERROR) << "failed to open file: " << file.error().ToString();
+    return;
+  }
+
+  size_t chunks = absl::GetFlag(FLAGS_upload_size) / absl::GetFlag(FLAGS_chunk_size);
+
+  LOG(INFO) << "uploading s3 file; chunks=" << chunks
+            << "; chunk_size=" << absl::GetFlag(FLAGS_chunk_size);
+
+  std::vector<uint8_t> buf(absl::GetFlag(FLAGS_chunk_size), 0xff);
+  for (size_t i = 0; i != chunks; i++) {
+    std::error_code ec = file->Write(io::Bytes(buf.data(), buf.size()));
+    if (ec) {
+      LOG(ERROR) << "failed to write to s3";
+      return;
+    }
+  }
+  std::error_code ec = file->Close();
+  if (ec) {
+    LOG(ERROR) << "failed to close s3 write file";
+    return;
   }
 }
 
@@ -135,6 +182,8 @@ int main(int argc, char* argv[]) {
       ListBuckets();
     } else if (cmd == "list-objects") {
       ListObjects();
+    } else if (cmd == "upload") {
+      Upload();
     } else if (cmd == "download") {
       Download();
     } else {
