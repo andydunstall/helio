@@ -10,12 +10,14 @@
 
 ABSL_FLAG(std::string, cmd, "list-buckets", "Command to run");
 ABSL_FLAG(std::string, bucket, "", "Target bucket");
+ABSL_FLAG(std::string, prefix, "", "List objects prefix");
+ABSL_FLAG(bool, https, true, "Whether to use HTTPS");
 ABSL_FLAG(bool, epoll, false, "Whether to use epoll instead of io_uring");
 
 void ListBuckets() {
   util::awsv2::Config config;
   config.region = "us-east-1";
-  config.https = false;
+  config.https = absl::GetFlag(FLAGS_https);
 
   std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
       std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
@@ -31,6 +33,35 @@ void ListBuckets() {
   }
   std::cout << "buckets:" << std::endl;
   for (const std::string& name : *buckets) {
+    std::cout << "* " << name << std::endl;
+  }
+}
+
+void ListObjects() {
+  if (absl::GetFlag(FLAGS_bucket).empty()) {
+    std::cout << "missing bucket" << std::endl;
+    return;
+  }
+
+  util::awsv2::Config config;
+  config.region = "us-east-1";
+  config.https = absl::GetFlag(FLAGS_https);
+
+  std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
+      std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
+  util::awsv2::s3::Client client{config, std::move(credentials_provider)};
+  util::awsv2::AwsResult<std::vector<std::string>> objects =
+      client.ListObjects(absl::GetFlag(FLAGS_bucket), absl::GetFlag(FLAGS_prefix));
+  if (!objects) {
+    LOG(ERROR) << "failed to get objects: " << objects.error().ToString();
+    return;
+  }
+  if (objects->size() == 0) {
+    std::cout << "no objects found" << std::endl;
+    return;
+  }
+  std::cout << "objects:" << std::endl;
+  for (const std::string& name : *objects) {
     std::cout << "* " << name << std::endl;
   }
 }
@@ -58,6 +89,8 @@ int main(int argc, char* argv[]) {
 
     if (cmd == "list-buckets") {
       ListBuckets();
+    } else if (cmd == "list-objects") {
+      ListObjects();
     } else {
       LOG(ERROR) << "unknown command: " << cmd;
     }

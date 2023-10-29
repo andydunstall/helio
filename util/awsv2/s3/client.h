@@ -18,6 +18,13 @@ struct ListBucketsResult {
   static AwsResult<ListBucketsResult> Parse(std::string_view s);
 };
 
+struct ListObjectsResult {
+  std::vector<std::string> objects;
+  std::string continuation_token;
+
+  static AwsResult<ListObjectsResult> Parse(std::string_view s);
+};
+
 class Client : public awsv2::Client {
  public:
   Client(const Config& config,
@@ -25,6 +32,12 @@ class Client : public awsv2::Client {
 
   // Lists all the buckets owned by this account.
   AwsResult<std::vector<std::string>> ListBuckets();
+
+  // Lists the objects in the bucket with the given prefix.
+  //
+  // Returns up to the given limit, or all objects if the limit is 0.
+  AwsResult<std::vector<std::string>> ListObjects(std::string_view bucket, std::string_view prefix,
+                                                  size_t limit = 0);
 };
 
 }  // namespace s3
