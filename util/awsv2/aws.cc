@@ -12,6 +12,8 @@ std::string ToString(AwsErrorType type) {
   switch (type) {
     case AwsErrorType::UNAUTHORIZED:
       return "unauthorized";
+    case AwsErrorType::NETWORK:
+      return "network";
     case AwsErrorType::INVALID_RESPONSE:
       return "invalid_response";
     default:

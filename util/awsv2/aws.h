@@ -32,6 +32,7 @@ struct Response {
 
 enum class AwsErrorType {
   UNAUTHORIZED,
+  NETWORK,
   INVALID_RESPONSE,
 };
 
