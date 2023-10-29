@@ -15,7 +15,7 @@ AwsResult<ListBucketsResult> ListBucketsResult::Parse(std::string_view s) {
   if (!xml_result) {
     AwsError err;
     err.type = AwsErrorType::INVALID_RESPONSE;
-    err.message = "failed to parse list buckets response: invalid xml";
+    err.message = "parse list buckets response: invalid xml";
     return nonstd::make_unexpected(err);
   }
 
@@ -23,7 +23,7 @@ AwsResult<ListBucketsResult> ListBucketsResult::Parse(std::string_view s) {
   if (root.type() != pugi::node_element) {
     AwsError err;
     err.type = AwsErrorType::INVALID_RESPONSE;
-    err.message = "failed to parse list buckets response: ListAllMyBucketsResult not found";
+    err.message = "parse list buckets response: ListAllMyBucketsResult not found";
     return nonstd::make_unexpected(err);
   }
 
@@ -31,7 +31,7 @@ AwsResult<ListBucketsResult> ListBucketsResult::Parse(std::string_view s) {
   if (root.type() != pugi::node_element) {
     AwsError err;
     err.type = AwsErrorType::INVALID_RESPONSE;
-    err.message = "failed to parse list buckets response: Buckets not found";
+    err.message = "parse list buckets response: Buckets not found";
     return nonstd::make_unexpected(err);
   }
 

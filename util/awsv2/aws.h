@@ -34,9 +34,13 @@ enum class AwsErrorType {
   INVALID_RESPONSE,
 };
 
+std::string ToString(AwsErrorType type);
+
 struct AwsError {
   AwsErrorType type;
   std::string message;
+
+  std::string ToString() const;
 };
 
 template <typename T> using AwsResult = io::Result<T, AwsError>;
