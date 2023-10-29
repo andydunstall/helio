@@ -31,12 +31,15 @@ struct Response {
 };
 
 enum class AwsErrorType {
+  UNAUTHORIZED,
   INVALID_RESPONSE,
 };
 
 std::string ToString(AwsErrorType type);
 
 struct AwsError {
+  AwsError(AwsErrorType type, std::string message);
+
   AwsErrorType type;
   std::string message;
 

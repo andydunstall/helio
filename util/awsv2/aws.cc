@@ -10,11 +10,16 @@ namespace awsv2 {
 
 std::string ToString(AwsErrorType type) {
   switch (type) {
+    case AwsErrorType::UNAUTHORIZED:
+      return "unauthorized";
     case AwsErrorType::INVALID_RESPONSE:
-      return "INVALID_RESPONSE";
+      return "invalid_response";
     default:
-      return "UNKNOWN";
+      return "unknown";
   }
+}
+
+AwsError::AwsError(AwsErrorType type_, std::string message_) : type{type_}, message{message_} {
 }
 
 std::string AwsError::ToString() const {

@@ -13,26 +13,21 @@ AwsResult<ListBucketsResult> ListBucketsResult::Parse(std::string_view s) {
   pugi::xml_document doc;
   const pugi::xml_parse_result xml_result = doc.load_buffer(s.data(), s.size());
   if (!xml_result) {
-    AwsError err;
-    err.type = AwsErrorType::INVALID_RESPONSE;
-    err.message = "parse list buckets response: invalid xml";
-    return nonstd::make_unexpected(err);
+    return nonstd::make_unexpected(
+        AwsError{AwsErrorType::INVALID_RESPONSE, "parse list buckets response: invalid xml"});
   }
 
   const pugi::xml_node root = doc.child("ListAllMyBucketsResult");
   if (root.type() != pugi::node_element) {
-    AwsError err;
-    err.type = AwsErrorType::INVALID_RESPONSE;
-    err.message = "parse list buckets response: ListAllMyBucketsResult not found";
-    return nonstd::make_unexpected(err);
+    return nonstd::make_unexpected(
+        AwsError{AwsErrorType::INVALID_RESPONSE,
+                 "parse list buckets response: ListAllMyBucketsResult not found"});
   }
 
   pugi::xml_node buckets = root.child("Buckets");
   if (root.type() != pugi::node_element) {
-    AwsError err;
-    err.type = AwsErrorType::INVALID_RESPONSE;
-    err.message = "parse list buckets response: Buckets not found";
-    return nonstd::make_unexpected(err);
+    return nonstd::make_unexpected(
+        AwsError{AwsErrorType::INVALID_RESPONSE, "parse list buckets response: Buckets not found"});
   }
 
   ListBucketsResult result;
@@ -47,7 +42,7 @@ AwsResult<std::vector<std::string>> Client::ListBuckets() {
   req.method = h2::verb::get;
   req.url.SetHost("s3.amazonaws.com");
 
-  AwsResult<Response> resp = Send(&req);
+  AwsResult<Response> resp = Send(req);
   if (!resp) {
     return nonstd::make_unexpected(resp.error());
   }
