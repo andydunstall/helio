@@ -13,21 +13,21 @@ AwsResult<ListBucketsResult> ListBucketsResult::Parse(std::string_view s) {
   pugi::xml_document doc;
   const pugi::xml_parse_result xml_result = doc.load_buffer(s.data(), s.size());
   if (!xml_result) {
-    return nonstd::make_unexpected(
-        AwsError{AwsErrorType::INVALID_RESPONSE, "parse list buckets response: invalid xml"});
+    return nonstd::make_unexpected(AwsError{AwsErrorType::INVALID_RESPONSE,
+                                            "parse list buckets response: invalid xml", false});
   }
 
   const pugi::xml_node root = doc.child("ListAllMyBucketsResult");
   if (root.type() != pugi::node_element) {
     return nonstd::make_unexpected(
         AwsError{AwsErrorType::INVALID_RESPONSE,
-                 "parse list buckets response: ListAllMyBucketsResult not found"});
+                 "parse list buckets response: ListAllMyBucketsResult not found", false});
   }
 
   pugi::xml_node buckets = root.child("Buckets");
   if (root.type() != pugi::node_element) {
-    return nonstd::make_unexpected(
-        AwsError{AwsErrorType::INVALID_RESPONSE, "parse list buckets response: Buckets not found"});
+    return nonstd::make_unexpected(AwsError{
+        AwsErrorType::INVALID_RESPONSE, "parse list buckets response: Buckets not found", false});
   }
 
   ListBucketsResult result;
@@ -35,6 +35,11 @@ AwsResult<ListBucketsResult> ListBucketsResult::Parse(std::string_view s) {
     result.buckets.push_back(node.child("Name").text().get());
   }
   return result;
+}
+
+Client::Client(const Config& config,
+               std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider)
+    : awsv2::Client{config, std::move(credentials_provider), "s3"} {
 }
 
 AwsResult<std::vector<std::string>> Client::ListBuckets() {

@@ -21,7 +21,8 @@ std::string ToString(AwsErrorType type) {
   }
 }
 
-AwsError::AwsError(AwsErrorType type_, std::string message_) : type{type_}, message{message_} {
+AwsError::AwsError(AwsErrorType type_, std::string message_, bool retryable_)
+    : type{type_}, message{message_}, retryable{retryable_} {
 }
 
 std::string AwsError::ToString() const {

@@ -34,15 +34,19 @@ enum class AwsErrorType {
   UNAUTHORIZED,
   NETWORK,
   INVALID_RESPONSE,
+  ACCESS_DENIED,
+  RESOURCE_NOT_FOUND,
+  UNKNOWN,
 };
 
 std::string ToString(AwsErrorType type);
 
 struct AwsError {
-  AwsError(AwsErrorType type, std::string message);
+  AwsError(AwsErrorType type, std::string message, bool retryable);
 
   AwsErrorType type;
   std::string message;
+  bool retryable;
 
   std::string ToString() const;
 };

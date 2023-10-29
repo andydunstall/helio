@@ -20,6 +20,9 @@ struct ListBucketsResult {
 
 class Client : public awsv2::Client {
  public:
+  Client(const Config& config,
+         std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider);
+
   // Lists all the buckets owned by this account.
   AwsResult<std::vector<std::string>> ListBuckets();
 };

@@ -13,9 +13,13 @@ ABSL_FLAG(std::string, bucket, "", "Target bucket");
 ABSL_FLAG(bool, epoll, false, "Whether to use epoll instead of io_uring");
 
 void ListBuckets() {
+  util::awsv2::Config config;
+  config.region = "us-east-1";
+  config.https = false;
+
   std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
       std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
-  util::awsv2::s3::Client client{std::move(credentials_provider)};
+  util::awsv2::s3::Client client{config, std::move(credentials_provider)};
   util::awsv2::AwsResult<std::vector<std::string>> buckets = client.ListBuckets();
   if (!buckets) {
     LOG(ERROR) << "failed to get buckets: " << buckets.error().ToString();

@@ -28,7 +28,7 @@ HttpClient::~HttpClient() {
 }
 
 AwsResult<Response> HttpClient::Send(const Request& req) {
-  std::string path = req.url.path();
+  std::string path = "/" + req.url.path();
   if (!req.url.QueryString().empty()) {
     path += "?";
     path += req.url.QueryString();
@@ -38,10 +38,8 @@ AwsResult<Response> HttpClient::Send(const Request& req) {
           << "; url=" << req.url.ToString();
 
   if (!Connect(req.url.host(), req.url.port(), req.url.scheme() == Scheme::HTTPS)) {
-    return nonstd::make_unexpected(AwsError{
-        AwsErrorType::NETWORK,
-        "failed to connect to host",
-    });
+    return nonstd::make_unexpected(
+        AwsError{AwsErrorType::NETWORK, "failed to connect to host", true});
   }
 
   h2::request<h2::string_body> http_req{req.method, path, kHttpVersion1_1};
@@ -56,10 +54,8 @@ AwsResult<Response> HttpClient::Send(const Request& req) {
     // Discard the cached connection.
     conn_ = std::nullopt;
 
-    return nonstd::make_unexpected(AwsError{
-        AwsErrorType::NETWORK,
-        "failed to send http request",
-    });
+    return nonstd::make_unexpected(
+        AwsError{AwsErrorType::NETWORK, "failed to send http request", true});
   }
 
   Response resp{};
