@@ -22,6 +22,13 @@ std::string GetEnv(const char* name) {
 
 }  // namespace
 
+CredentialsProvider::CredentialsProvider(const std::string& name) : name_{name} {
+}
+
+EnvironmentCredentialsProvider::EnvironmentCredentialsProvider()
+    : CredentialsProvider{"environment"} {
+}
+
 std::optional<Credentials> EnvironmentCredentialsProvider::LoadCredentials() {
   Credentials creds;
 
@@ -39,9 +46,35 @@ std::optional<Credentials> EnvironmentCredentialsProvider::LoadCredentials() {
 
   creds.session_token = GetEnv("AWS_SESSION_TOKEN");
 
-  LOG(INFO) << "aws: environment credentials provider: loaded credentials";
+  VLOG(1) << "aws: environment credentials provider: loaded credentials";
 
   return creds;
+}
+
+CredentialsProviderChain::CredentialsProviderChain() : CredentialsProvider{"chain"} {
+}
+
+std::optional<Credentials> CredentialsProviderChain::LoadCredentials() {
+  for (std::unique_ptr<CredentialsProvider>& provider : providers_) {
+    std::optional<Credentials> creds = provider->LoadCredentials();
+    if (creds) {
+      LOG_FIRST_N(INFO, 1) << "aws: loaded credentials; provider=" << provider->name();
+      return creds;
+    }
+  }
+
+  return std::nullopt;
+}
+
+void CredentialsProviderChain::AddProvider(std::unique_ptr<CredentialsProvider> provider) {
+  providers_.push_back(std::move(provider));
+}
+
+std::unique_ptr<CredentialsProvider> CredentialsProviderChain::DefaultCredentialProviderChain() {
+  std::unique_ptr<CredentialsProviderChain> provider = std::make_unique<CredentialsProviderChain>();
+  provider->AddProvider(std::make_unique<EnvironmentCredentialsProvider>());
+  // TODO(andydunstall): Add providers.
+  return provider;
 }
 
 }  // namespace awsv2

@@ -27,7 +27,7 @@ void ListBuckets() {
   config.endpoint = absl::GetFlag(FLAGS_endpoint);
 
   std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
-      std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
+      util::awsv2::CredentialsProviderChain::DefaultCredentialProviderChain();
   util::awsv2::s3::Client client{config, std::move(credentials_provider)};
   util::awsv2::AwsResult<std::vector<std::string>> buckets = client.ListBuckets();
   if (!buckets) {
@@ -56,7 +56,7 @@ void ListObjects() {
   config.endpoint = absl::GetFlag(FLAGS_endpoint);
 
   std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
-      std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
+      util::awsv2::CredentialsProviderChain::DefaultCredentialProviderChain();
   util::awsv2::s3::Client client{config, std::move(credentials_provider)};
   util::awsv2::AwsResult<std::vector<std::string>> objects =
       client.ListObjects(absl::GetFlag(FLAGS_bucket), absl::GetFlag(FLAGS_prefix));
@@ -91,7 +91,7 @@ void Upload() {
   config.endpoint = absl::GetFlag(FLAGS_endpoint);
 
   std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
-      std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
+      util::awsv2::CredentialsProviderChain::DefaultCredentialProviderChain();
   std::shared_ptr<util::awsv2::s3::Client> client =
       std::make_shared<util::awsv2::s3::Client>(config, std::move(credentials_provider));
   util::awsv2::AwsResult<util::awsv2::s3::WriteFile> file = util::awsv2::s3::WriteFile::Open(
@@ -138,7 +138,7 @@ void Download() {
   config.endpoint = absl::GetFlag(FLAGS_endpoint);
 
   std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
-      std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
+      util::awsv2::CredentialsProviderChain::DefaultCredentialProviderChain();
   std::shared_ptr<util::awsv2::s3::Client> client =
       std::make_shared<util::awsv2::s3::Client>(config, std::move(credentials_provider));
   std::unique_ptr<io::ReadonlyFile> file = std::make_unique<util::awsv2::s3::ReadFile>(
