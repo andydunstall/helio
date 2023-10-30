@@ -13,6 +13,7 @@ namespace awsv2 {
 
 struct Config {
   std::string region;
+  std::string endpoint;
   bool https;
 };
 
@@ -23,10 +24,11 @@ class Client {
 
   AwsResult<Response> Send(Request req);
 
+ protected:
+  Config config_;
+
  private:
   AwsResult<Response> SendAttempt(Request req);
-
-  Config config_;
 
   std::unique_ptr<CredentialsProvider> credentials_provider_;
 

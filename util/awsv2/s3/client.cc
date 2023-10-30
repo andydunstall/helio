@@ -120,7 +120,7 @@ Client::Client(const Config& config,
 AwsResult<std::vector<std::string>> Client::ListBuckets() {
   Request req;
   req.method = h2::verb::get;
-  req.url.SetHost("s3.amazonaws.com");
+  SetHostPath("", "", &req);
 
   AwsResult<Response> resp = Send(req);
   if (!resp) {
@@ -142,9 +142,7 @@ AwsResult<std::vector<std::string>> Client::ListObjects(std::string_view bucket,
   do {
     Request req;
     req.method = h2::verb::get;
-    req.url.SetHost(std::string(bucket) + ".s3.amazonaws.com");
-    req.url.SetPath("/");
-    req.headers.emplace("host", std::string(bucket) + ".s3.amazonaws.com");
+    SetHostPath(bucket, "", &req);
 
     // ListObjectsV2.
     req.url.AddParam("list-type", "2");
@@ -187,8 +185,7 @@ AwsResult<GetObjectResult> Client::GetObject(std::string_view bucket, std::strin
                                              std::string_view range) {
   Request req;
   req.method = h2::verb::get;
-  req.url.SetHost(std::string(bucket) + ".s3.amazonaws.com");
-  req.url.SetPath(absl::StrCat("/", key));
+  SetHostPath(bucket, key, &req);
   req.headers.emplace("range", range);
 
   AwsResult<Response> resp = Send(req);
@@ -220,8 +217,7 @@ AwsResult<std::string> Client::CreateMultipartUpload(std::string_view bucket,
                                                      std::string_view key) {
   Request req;
   req.method = h2::verb::post;
-  req.url.SetHost(std::string(bucket) + ".s3.amazonaws.com");
-  req.url.SetPath(absl::StrCat("/", key));
+  SetHostPath(bucket, key, &req);
   req.url.AddParam("uploads", "");
 
   AwsResult<Response> resp = Send(req);
@@ -246,8 +242,7 @@ AwsResult<std::string> Client::UploadPart(std::string_view bucket, std::string_v
                                           std::string_view part) {
   Request req;
   req.method = h2::verb::put;
-  req.url.SetHost(std::string(bucket) + ".s3.amazonaws.com");
-  req.url.SetPath(absl::StrCat("/", key));
+  SetHostPath(bucket, key, &req);
   req.url.AddParam("partNumber", absl::StrFormat("%d", part_number));
   req.url.AddParam("uploadId", std::string(upload_id));
   req.body = part;
@@ -281,8 +276,7 @@ AwsResult<std::string> Client::CompleteMultipartUpload(std::string_view bucket,
 
   Request req;
   req.method = h2::verb::post;
-  req.url.SetHost(std::string(bucket) + ".s3.amazonaws.com");
-  req.url.SetPath(absl::StrCat("/", key));
+  SetHostPath(bucket, key, &req);
   req.url.AddParam("uploadId", std::string(upload_id));
   req.body = body;
   req.headers.emplace("content-length", absl::StrFormat("%d", body.size()));
@@ -299,6 +293,25 @@ AwsResult<std::string> Client::CompleteMultipartUpload(std::string_view bucket,
   }
 
   return result->etag;
+}
+
+void Client::SetHostPath(std::string_view bucket, std::string_view key, Request* req) const {
+  if (bucket.empty()) {
+    if (config_.endpoint.empty()) {
+      req->url.SetHost("s3.amazonaws.com");
+    } else {
+      req->url.SetHost(config_.endpoint);
+    }
+    return;
+  }
+
+  if (config_.endpoint.empty()) {
+    req->url.SetHost(absl::StrCat(bucket, ".s3.amazonaws.com"));
+    req->url.SetPath(absl::StrCat("/", key));
+  } else {
+    req->url.SetHost(config_.endpoint);
+    req->url.SetPath(absl::StrCat("/", bucket, "/", key));
+  }
 }
 
 }  // namespace s3

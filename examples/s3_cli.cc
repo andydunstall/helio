@@ -18,11 +18,13 @@ ABSL_FLAG(size_t, upload_size, 100 << 20, "Upload file size");
 ABSL_FLAG(size_t, chunk_size, 1024, "File chunk size");
 ABSL_FLAG(bool, epoll, false, "Whether to use epoll instead of io_uring");
 ABSL_FLAG(bool, https, true, "Whether to use HTTPS");
+ABSL_FLAG(std::string, endpoint, "", "S3 endpoint");
 
 void ListBuckets() {
   util::awsv2::Config config;
   config.region = "us-east-1";
   config.https = absl::GetFlag(FLAGS_https);
+  config.endpoint = absl::GetFlag(FLAGS_endpoint);
 
   std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
       std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
@@ -51,6 +53,7 @@ void ListObjects() {
   util::awsv2::Config config;
   config.region = "us-east-1";
   config.https = absl::GetFlag(FLAGS_https);
+  config.endpoint = absl::GetFlag(FLAGS_endpoint);
 
   std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
       std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
@@ -85,6 +88,7 @@ void Upload() {
   util::awsv2::Config config;
   config.region = "us-east-1";
   config.https = absl::GetFlag(FLAGS_https);
+  config.endpoint = absl::GetFlag(FLAGS_endpoint);
 
   std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
       std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();
@@ -131,6 +135,7 @@ void Download() {
   util::awsv2::Config config;
   config.region = "us-east-1";
   config.https = absl::GetFlag(FLAGS_https);
+  config.endpoint = absl::GetFlag(FLAGS_endpoint);
 
   std::unique_ptr<util::awsv2::CredentialsProvider> credentials_provider =
       std::make_unique<util::awsv2::EnvironmentCredentialsProvider>();

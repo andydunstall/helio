@@ -68,6 +68,9 @@ class Client : public awsv2::Client {
   AwsResult<std::string> CompleteMultipartUpload(std::string_view bucket, std::string_view key,
                                                  std::string_view upload_id,
                                                  const std::vector<std::string>& parts);
+
+ private:
+  void SetHostPath(std::string_view bucket, std::string_view key, Request* req) const;
 };
 
 }  // namespace s3
