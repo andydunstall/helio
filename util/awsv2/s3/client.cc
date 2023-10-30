@@ -253,7 +253,7 @@ AwsResult<std::string> Client::UploadPart(std::string_view bucket, std::string_v
     return nonstd::make_unexpected(resp.error());
   }
 
-  return resp->headers["ETag"];
+  return resp->headers["etag"];
 }
 
 AwsResult<std::string> Client::CompleteMultipartUpload(std::string_view bucket,
