@@ -19,11 +19,14 @@ constexpr unsigned kHttpVersion1_1 = 11;
 }  // namespace
 
 HttpClient::HttpClient() {
-  proactor_ = ProactorBase::me();
   ctx_ = http::TlsClient::CreateSslContext();
 }
 
 HttpClient::~HttpClient() {
+  if (conn_) {
+    // Close the cached conn in its proactor.
+    conn_->client->proactor()->Await([&] { conn_->client->Close(); });
+  }
   http::TlsClient::FreeContext(ctx_);
 }
 
@@ -86,7 +89,7 @@ bool HttpClient::Connect(std::string_view host, uint16_t port, bool tls) {
   conn.tls = tls;
 
   if (tls) {
-    std::unique_ptr<http::TlsClient> client = std::make_unique<http::TlsClient>(proactor_);
+    std::unique_ptr<http::TlsClient> client = std::make_unique<http::TlsClient>(ProactorBase::me());
     std::error_code ec = client->Connect(host, absl::StrFormat("%d", port), ctx_);
     if (ec) {
       return false;
@@ -94,7 +97,7 @@ bool HttpClient::Connect(std::string_view host, uint16_t port, bool tls) {
 
     conn.client = std::move(client);
   } else {
-    std::unique_ptr<http::Client> client = std::make_unique<http::Client>(proactor_);
+    std::unique_ptr<http::Client> client = std::make_unique<http::Client>(ProactorBase::me());
     std::error_code ec = client->Connect(host, absl::StrFormat("%d", port));
     if (ec) {
       return false;

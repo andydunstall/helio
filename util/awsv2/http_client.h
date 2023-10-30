@@ -62,8 +62,6 @@ class HttpClient {
   // returned, otherwise a new connection is created.
   bool Connect(std::string_view host, uint16_t port, bool tls);
 
-  ProactorBase* proactor_;
-
   SSL_CTX* ctx_;
 
   std::optional<Connection> conn_;

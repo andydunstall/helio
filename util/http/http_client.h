@@ -79,6 +79,10 @@ class Client {
     on_connect_cb_ = std::move(cb);
   }
 
+  ProactorBase* proactor() {
+    return socket_->proactor();
+  }
+
  protected:
   std::unique_ptr<FiberSocketBase> socket_;
 
