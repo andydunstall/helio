@@ -82,6 +82,7 @@ std::error_code WriteFile::Flush() {
                           std::string_view(reinterpret_cast<const char*>(buf_.data()), offset_));
   if (!etag) {
     LOG(ERROR) << "failed to upload object: " << etag.error().ToString();
+    return std::make_error_code(std::errc::io_error);
   }
 
   parts_.push_back(*etag);
