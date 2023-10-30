@@ -37,8 +37,22 @@ Client::Client(const Config& config, std::unique_ptr<CredentialsProvider> creden
 }
 
 AwsResult<Response> Client::Send(Request req) {
-  // TODO(andydunstall): Add retry support.
-  return SendAttempt(req);
+  int attempt = 0;
+  while (true) {
+    attempt++;
+
+    AwsResult<Response> resp = SendAttempt(req);
+    if (resp) {
+      return resp;
+    }
+
+    if (!resp.error().retryable || attempt >= 5) {
+      return resp;
+    }
+
+    // TODO(andydunstall): Add exponential backoff.
+    ThisFiber::SleepFor(std::chrono::seconds(5));
+  }
 }
 
 AwsResult<Response> Client::SendAttempt(Request req) {
